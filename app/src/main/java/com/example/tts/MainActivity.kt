@@ -47,20 +47,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun generateAndPlayAudio(apiKey: String, text: String, btnPlay: Button) {
-        // "21m00Tcm4TlvDq8ikWAM" is the voice ID for "Rachel". 
-        // You can swap this with any voice ID from your ElevenLabs dashboard.
-        val voiceId = "21m00Tcm4TlvDq8ikWAM"
-        val url = "https://api.elevenlabs.io/v1/text-to-speech/$voiceId"
+        // 1. Point to your new completely free server!
+        val url = "https://jagadishgurram-kokoro-api.hf.space/api/v1/audio/speech"
 
         val json = JSONObject()
-        json.put("text", text)
-        json.put("model_id", "eleven_multilingual_v2")
-
+        // Tell the server to use Kokoro
+        json.put("model", "kokoro") 
+        json.put("input", text)
+        
+        // "hm_omega" is a Male Hindi voice. 
+        // You can change this to "hf_alpha" for a Female Hindi voice.
+        json.put("voice", "hm_omega") 
+        
         val body = json.toString().toRequestBody("application/json".toMediaType())
 
+        // 2. Use standard Bearer authorization (which Kokoro uses)
         val request = Request.Builder()
             .url(url)
-            .addHeader("xi-api-key", apiKey)
+            .addHeader("Authorization", "Bearer $apiKey") 
             .post(body)
             .build()
 
@@ -85,7 +89,7 @@ class MainActivity : AppCompatActivity() {
 
                 val audioData = response.body?.bytes()
                 if (audioData != null) {
-                    playAudio(audioData)
+                    playAudio(audioData) 
                 }
 
                 runOnUiThread {
@@ -95,6 +99,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
+
 
     private fun playAudio(audioData: ByteArray) {
         try {
