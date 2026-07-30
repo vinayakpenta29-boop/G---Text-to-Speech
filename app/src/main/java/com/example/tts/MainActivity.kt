@@ -47,15 +47,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun generateAndPlayAudio(apiKey: String, text: String, btnPlay: Button) {
-        // 1. Point to your new completely free server!
         val url = "https://kokoro-web-latest-066e.onrender.com/api/v1/audio/speech"
 
         val json = JSONObject()
-        json.put("model", "kokoro") 
+        // 1. Use the exact model name required by the Kokoro Web API
+        json.put("model", "model_q8f16") 
         json.put("input", text)
         json.put("voice", "hm_omega") 
         
-        val body = json.toString().toRequestBody("application/json".toMediaType())
+        // 2. Explicitly format as UTF-8 so Hindi characters do not get scrambled
+        val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
 
         val request = Request.Builder()
             .url(url)
@@ -75,6 +76,8 @@ class MainActivity : AppCompatActivity() {
             override fun onResponse(call: Call, response: Response) {
                 if (!response.isSuccessful) {
                     runOnUiThread {
+                        // Helpful debugging: This will now print the exact error reason to your Android Studio logs if it fails again
+                        println("Server Error Response: ${response.body?.string()}")
                         Toast.makeText(this@MainActivity, "API Error: ${response.code}", Toast.LENGTH_LONG).show()
                         btnPlay.isEnabled = true
                         btnPlay.text = "Play Story"
