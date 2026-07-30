@@ -48,20 +48,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun generateAndPlayAudio(apiKey: String, text: String, btnPlay: Button) {
         // 1. Point to your new completely free server!
-        val url = "https://jagadishgurram-kokoro-api.hf.space/api/v1/audio/speech"
+        val url = "https://kokoro-web-latest-066e.onrender.com/api/v1/audio/speech"
 
         val json = JSONObject()
-        // Tell the server to use Kokoro
         json.put("model", "kokoro") 
         json.put("input", text)
-        
-        // "hm_omega" is a Male Hindi voice. 
-        // You can change this to "hf_alpha" for a Female Hindi voice.
         json.put("voice", "hm_omega") 
         
         val body = json.toString().toRequestBody("application/json".toMediaType())
 
-        // 2. Use standard Bearer authorization (which Kokoro uses)
         val request = Request.Builder()
             .url(url)
             .addHeader("Authorization", "Bearer $apiKey") 
