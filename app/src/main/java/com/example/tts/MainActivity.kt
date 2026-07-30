@@ -52,19 +52,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun generateAndPlayAudio(apiKey: String, text: String, btnPlay: Button) {
-        val url = "https://kokoro-web-latest-066e.onrender.com/api/v1/audio/speech"
+        // 1. Notice the URL change at the end!
+        val url = "https://kokoro-web-latest-066e.onrender.com/v1/audio/speech"
 
         val json = JSONObject()
-        // 1. Use the exact model name required by the Kokoro Web API
-        json.put("model", "model_q8f16") 
+        // 2. The edge-tts API expects the standard OpenAI model name
+        json.put("model", "tts-1") 
         json.put("input", text)
-        json.put("voice", "hm_omega") 
         
-        // 2. Explicitly format as UTF-8 so Hindi characters do not get scrambled
+        // 3. Microsoft Edge's Premium Hindi Neural Voices:
+        // Use "hi-IN-MadhurNeural" (Male) or "hi-IN-SwaraNeural" (Female)
+        json.put("voice", "hi-IN-MadhurNeural") 
+        
         val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
 
         val request = Request.Builder()
             .url(url)
+            // It still accepts the secret password you set up in Render!
             .addHeader("Authorization", "Bearer $apiKey") 
             .post(body)
             .build()
@@ -81,8 +85,6 @@ class MainActivity : AppCompatActivity() {
             override fun onResponse(call: Call, response: Response) {
                 if (!response.isSuccessful) {
                     runOnUiThread {
-                        // Helpful debugging: This will now print the exact error reason to your Android Studio logs if it fails again
-                        println("Server Error Response: ${response.body?.string()}")
                         Toast.makeText(this@MainActivity, "API Error: ${response.code}", Toast.LENGTH_LONG).show()
                         btnPlay.isEnabled = true
                         btnPlay.text = "Play Story"
@@ -102,6 +104,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
+
 
 
     private fun playAudio(audioData: ByteArray) {
