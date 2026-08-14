@@ -8,26 +8,49 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="ElevenLabs Story TTS"
+        android:text="Hindi Story TTS"
         android:textSize="24sp"
         android:textStyle="bold"
         android:layout_marginBottom="16dp"/>
 
-    <EditText
-        android:id="@+id/editApiKey"
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Hindi Voice:"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"/>
+
+    <!-- Voice Selection Option -->
+    <RadioGroup
+        android:id="@+id/radioGroupVoice"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Enter ElevenLabs API Key"
-        android:inputType="textPassword"
-        android:layout_marginBottom="16dp"/>
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp">
 
+        <RadioButton
+            android:id="@+id/radioMadhur"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Madhur (Male)"
+            android:checked="true"
+            android:layout_marginEnd="16dp"/>
+
+        <RadioButton
+            android:id="@+id/radioSwara"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Swara (Female)"/>
+    </RadioGroup>
+
+    <!-- Story Text Input -->
     <EditText
         android:id="@+id/editStoryText"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:gravity="top|start"
-        android:hint="Paste YouTube story text here..."
+        android:hint="Paste your Hindi story text here..."
         android:inputType="textMultiLine"
         android:background="#11000000"
         android:padding="12dp"
