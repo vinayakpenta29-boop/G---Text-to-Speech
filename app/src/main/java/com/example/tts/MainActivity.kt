@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 class MainActivity : AppCompatActivity() {
 
     // Your secret password configured in your Render environment variables
-    private val API_KEY = "my_secret_key_123"
+    private val API_KEY = "Vinay@1979"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(120, TimeUnit.SECONDS)
