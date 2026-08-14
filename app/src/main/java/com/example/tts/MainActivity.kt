@@ -51,7 +51,7 @@ class MainActivity : AppCompatActivity() {
     private var currentSpeed = 1.0f
     private var currentPitch = 1.0f
     private var isAudioPaused = false
-    private var latestAudioData: ByteArray? = null // Holds audio for saving
+    private var latestAudioData: ByteArray? = null 
 
     private lateinit var btnGeneratePlay: Button
     private lateinit var btnPauseResume: Button
@@ -92,7 +92,8 @@ class MainActivity : AppCompatActivity() {
         // Register Receiver for Notification Buttons
         val filter = IntentFilter(ACTION_PLAY_PAUSE)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(notificationReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            // FIX: This must be EXPORTED so the Android System (Notification panel) is allowed to send the play/pause command to your app!
+            registerReceiver(notificationReceiver, filter, Context.RECEIVER_EXPORTED)
         } else {
             registerReceiver(notificationReceiver, filter)
         }
@@ -286,14 +287,16 @@ class MainActivity : AppCompatActivity() {
         if (mediaPlayer == null) return
         val isPlaying = mediaPlayer!!.isPlaying
 
-        val playPauseIntent = Intent(ACTION_PLAY_PAUSE)
+        // FIX: Ensure the intent explicitly targets this app so the system doesn't block it
+        val playPauseIntent = Intent(ACTION_PLAY_PAUSE).apply {
+            setPackage(packageName) 
+        }
         val pendingIntent = PendingIntent.getBroadcast(this, 0, playPauseIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
         val actionIcon = if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
         val actionTitle = if (isPlaying) "Pause" else "Play"
         val state = if (isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
 
-        // This tells the notification where the progress bar should be!
         mediaSession?.setPlaybackState(
             PlaybackStateCompat.Builder()
                 .setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE)
