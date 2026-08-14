@@ -92,13 +92,50 @@
                 android:text="1.5x"/>
         </RadioGroup>
 
+        <!-- Pitch Selection (Horror Effects) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Voice Pitch (Horror FX):"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"/>
+
+        <RadioGroup
+            android:id="@+id/radioGroupPitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <RadioButton
+                android:id="@+id/pitchNormal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Normal"
+                android:checked="true"
+                android:layout_marginEnd="8dp"/>
+
+            <RadioButton
+                android:id="@+id/pitchDeep"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Deep"
+                android:layout_marginEnd="8dp"/>
+
+            <RadioButton
+                android:id="@+id/pitchDemon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Demon"/>
+        </RadioGroup>
+
         <!-- Story Text Input -->
         <EditText
             android:id="@+id/editStoryText"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:minHeight="180dp"
+            android:minHeight="140dp"
             android:gravity="top|start"
             android:hint="Paste your Hindi story text here..."
             android:inputType="textMultiLine"
