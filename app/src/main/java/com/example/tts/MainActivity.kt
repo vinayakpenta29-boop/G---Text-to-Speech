@@ -1,7 +1,6 @@
 package com.example.tts
 
 import android.media.MediaPlayer
-import android.media.PlaybackParams
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
@@ -35,6 +34,7 @@ class MainActivity : AppCompatActivity() {
 
     private var mediaPlayer: MediaPlayer? = null
     private var currentSpeed = 1.0f
+    private var currentPitch = 1.0f
     private var isAudioPaused = false
 
     private lateinit var btnGeneratePlay: Button
@@ -48,6 +48,7 @@ class MainActivity : AppCompatActivity() {
         val editStoryText = findViewById<EditText>(R.id.editStoryText)
         val radioMadhur = findViewById<RadioButton>(R.id.radioMadhur)
         val radioGroupSpeed = findViewById<RadioGroup>(R.id.radioGroupSpeed)
+        val radioGroupPitch = findViewById<RadioGroup>(R.id.radioGroupPitch)
 
         btnGeneratePlay = findViewById(R.id.btnGeneratePlay)
         btnPauseResume = findViewById(R.id.btnPauseResume)
@@ -61,8 +62,17 @@ class MainActivity : AppCompatActivity() {
                 R.id.speed150 -> 1.50f
                 else -> 1.0f
             }
-            // Apply speed instantly if already playing
-            applyCurrentSpeed()
+            applyPlaybackParams()
+        }
+
+        // Pitch selection listener
+        radioGroupPitch.setOnCheckedChangeListener { _, checkedId ->
+            currentPitch = when (checkedId) {
+                R.id.pitchDeep -> 0.8f   // Lowers pitch slightly for a creepy, imposing voice
+                R.id.pitchDemon -> 0.6f  // Lowers pitch drastically for a demonic sound
+                else -> 1.0f
+            }
+            applyPlaybackParams()
         }
 
         // Generate & Play button
@@ -97,7 +107,7 @@ class MainActivity : AppCompatActivity() {
                     btnPauseResume.text = "Resume"
                 } else if (isAudioPaused) {
                     player.start()
-                    applyCurrentSpeed()
+                    applyPlaybackParams()
                     isAudioPaused = false
                     btnPauseResume.text = "Pause"
                 }
@@ -172,7 +182,8 @@ class MainActivity : AppCompatActivity() {
             mediaPlayer = MediaPlayer().apply {
                 setDataSource(tempFile.absolutePath)
                 prepare()
-                playbackParams = playbackParams.setSpeed(currentSpeed)
+                // Set both speed and pitch simultaneously
+                playbackParams = playbackParams.setSpeed(currentSpeed).setPitch(currentPitch)
                 start()
 
                 setOnCompletionListener {
@@ -190,11 +201,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun applyCurrentSpeed() {
+    private fun applyPlaybackParams() {
         mediaPlayer?.let { player ->
             try {
                 val isPlaying = player.isPlaying
-                player.playbackParams = player.playbackParams.setSpeed(currentSpeed)
+                // Set both speed and pitch dynamically while playing
+                player.playbackParams = player.playbackParams.setSpeed(currentSpeed).setPitch(currentPitch)
                 if (!isPlaying && !isAudioPaused) {
                     player.pause()
                 }
