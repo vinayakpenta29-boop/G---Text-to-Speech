@@ -1,65 +1,145 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="24dp">
+    android:fillViewport="true">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hindi Story TTS"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Select Hindi Voice:"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp"/>
-
-    <!-- Voice Selection Option -->
-    <RadioGroup
-        android:id="@+id/radioGroupVoice"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="16dp">
+        android:orientation="vertical"
+        android:padding="20dp">
 
-        <RadioButton
-            android:id="@+id/radioMadhur"
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Madhur (Male)"
-            android:checked="true"
-            android:layout_marginEnd="16dp"/>
+            android:text="Hindi Story TTS"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp"/>
 
-        <RadioButton
-            android:id="@+id/radioSwara"
+        <!-- Voice Selection -->
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Swara (Female)"/>
-    </RadioGroup>
+            android:text="Select Hindi Voice:"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"/>
 
-    <!-- Story Text Input -->
-    <EditText
-        android:id="@+id/editStoryText"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:gravity="top|start"
-        android:hint="Paste your Hindi story text here..."
-        android:inputType="textMultiLine"
-        android:background="#11000000"
-        android:padding="12dp"
-        android:layout_marginBottom="16dp"/>
+        <RadioGroup
+            android:id="@+id/radioGroupVoice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
 
-    <Button
-        android:id="@+id/btnPlay"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Play Story"
-        android:padding="16dp"/>
-</LinearLayout>
+            <RadioButton
+                android:id="@+id/radioMadhur"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Madhur (Male)"
+                android:checked="true"
+                android:layout_marginEnd="16dp"/>
+
+            <RadioButton
+                android:id="@+id/radioSwara"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Swara (Female)"/>
+        </RadioGroup>
+
+        <!-- Speed Selection -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Voice Speed:"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"/>
+
+        <RadioGroup
+            android:id="@+id/radioGroupSpeed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <RadioButton
+                android:id="@+id/speed075"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0.75x"
+                android:layout_marginEnd="8dp"/>
+
+            <RadioButton
+                android:id="@+id/speed100"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1.0x"
+                android:checked="true"
+                android:layout_marginEnd="8dp"/>
+
+            <RadioButton
+                android:id="@+id/speed125"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1.25x"
+                android:layout_marginEnd="8dp"/>
+
+            <RadioButton
+                android:id="@+id/speed150"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1.5x"/>
+        </RadioGroup>
+
+        <!-- Story Text Input -->
+        <EditText
+            android:id="@+id/editStoryText"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:minHeight="180dp"
+            android:gravity="top|start"
+            android:hint="Paste your Hindi story text here..."
+            android:inputType="textMultiLine"
+            android:background="#11000000"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Generate & Play Button -->
+        <Button
+            android:id="@+id/btnGeneratePlay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Generate &amp; Play"
+            android:padding="14dp"
+            android:layout_marginBottom="8dp"/>
+
+        <!-- Playback Controls -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <Button
+                android:id="@+id/btnPauseResume"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Pause"
+                android:enabled="false"
+                android:layout_marginEnd="4dp"/>
+
+            <Button
+                android:id="@+id/btnStop"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Stop"
+                android:enabled="false"
+                android:layout_marginStart="4dp"/>
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
