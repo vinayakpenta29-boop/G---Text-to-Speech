@@ -6,6 +6,8 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.RadioButton
 import android.widget.RadioGroup
+import android.widget.SeekBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import okhttp3.Call
@@ -24,7 +26,7 @@ import java.util.concurrent.TimeUnit
 class MainActivity : AppCompatActivity() {
 
     // Keep your working password here
-    private val API_KEY = "Vinay@1979"
+    private val API_KEY = "YOUR_REAL_PASSWORD_HERE"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(120, TimeUnit.SECONDS)
@@ -40,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnGeneratePlay: Button
     private lateinit var btnPauseResume: Button
     private lateinit var btnStop: Button
+    private lateinit var txtPitchValue: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,8 +50,12 @@ class MainActivity : AppCompatActivity() {
 
         val editStoryText = findViewById<EditText>(R.id.editStoryText)
         val radioMadhur = findViewById<RadioButton>(R.id.radioMadhur)
+        
         val radioGroupSpeed = findViewById<RadioGroup>(R.id.radioGroupSpeed)
         val radioGroupPitch = findViewById<RadioGroup>(R.id.radioGroupPitch)
+        
+        val seekBarPitch = findViewById<SeekBar>(R.id.seekBarPitch)
+        txtPitchValue = findViewById(R.id.txtPitchValue)
 
         btnGeneratePlay = findViewById(R.id.btnGeneratePlay)
         btnPauseResume = findViewById(R.id.btnPauseResume)
@@ -65,15 +72,43 @@ class MainActivity : AppCompatActivity() {
             applyPlaybackParams()
         }
 
-        // Pitch selection listener
+        // Pitch RadioGroup listener
         radioGroupPitch.setOnCheckedChangeListener { _, checkedId ->
-            currentPitch = when (checkedId) {
-                R.id.pitchDeep -> 0.8f   // Lowers pitch slightly for a creepy, imposing voice
-                R.id.pitchDemon -> 0.6f  // Lowers pitch drastically for a demonic sound
-                else -> 1.0f
+            if (checkedId != -1) { // Only run if a button is actually checked
+                currentPitch = when (checkedId) {
+                    R.id.pitchDeep -> 0.8f
+                    R.id.pitchDemon -> 0.6f
+                    else -> 1.0f
+                }
+                
+                // Automatically move the SeekBar to match the button
+                seekBarPitch.progress = (currentPitch * 100).toInt()
+                txtPitchValue.text = "${currentPitch}x"
+                
+                applyPlaybackParams()
             }
-            applyPlaybackParams()
         }
+
+        // Live Pitch SeekBar listener
+        seekBarPitch.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    // Prevent pitch from hitting exactly 0.0, which crashes MediaPlayer
+                    val safeProgress = if (progress < 10) 10 else progress
+                    currentPitch = safeProgress / 100f
+                    
+                    txtPitchValue.text = "${String.format("%.2f", currentPitch)}x"
+                    
+                    // Uncheck the preset buttons because the user is sliding manually
+                    radioGroupPitch.clearCheck()
+                    
+                    applyPlaybackParams()
+                }
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
 
         // Generate & Play button
         btnGeneratePlay.setOnClickListener {
@@ -182,7 +217,6 @@ class MainActivity : AppCompatActivity() {
             mediaPlayer = MediaPlayer().apply {
                 setDataSource(tempFile.absolutePath)
                 prepare()
-                // Set both speed and pitch simultaneously
                 playbackParams = playbackParams.setSpeed(currentSpeed).setPitch(currentPitch)
                 start()
 
@@ -205,7 +239,6 @@ class MainActivity : AppCompatActivity() {
         mediaPlayer?.let { player ->
             try {
                 val isPlaying = player.isPlaying
-                // Set both speed and pitch dynamically while playing
                 player.playbackParams = player.playbackParams.setSpeed(currentSpeed).setPitch(currentPitch)
                 if (!isPlaying && !isAudioPaused) {
                     player.pause()
