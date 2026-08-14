@@ -4,6 +4,7 @@ import android.media.MediaPlayer
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
+import android.widget.RadioButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import okhttp3.Call
@@ -20,56 +21,61 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
+
+    // Your secret password configured in your Render environment variables
+    private val API_KEY = "my_secret_key_123"
+
     private val client = OkHttpClient.Builder()
         .connectTimeout(120, TimeUnit.SECONDS)
         .readTimeout(120, TimeUnit.SECONDS)
         .writeTimeout(120, TimeUnit.SECONDS)
         .build()
+
     private var mediaPlayer: MediaPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val editApiKey = findViewById<EditText>(R.id.editApiKey)
         val editStoryText = findViewById<EditText>(R.id.editStoryText)
+        val radioMadhur = findViewById<RadioButton>(R.id.radioMadhur)
         val btnPlay = findViewById<Button>(R.id.btnPlay)
 
         btnPlay.setOnClickListener {
-            val apiKey = editApiKey.text.toString().trim()
             val text = editStoryText.text.toString().trim()
 
-            if (apiKey.isEmpty() || text.isEmpty()) {
-                Toast.makeText(this, "Please enter API Key and Text", Toast.LENGTH_SHORT).show()
+            if (text.isEmpty()) {
+                Toast.makeText(this, "Please paste story text first", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
+            }
+
+            // Check which voice is selected
+            val selectedVoice = if (radioMadhur.isChecked) {
+                "hi-IN-MadhurNeural"
+            } else {
+                "hi-IN-SwaraNeural"
             }
 
             btnPlay.isEnabled = false
             btnPlay.text = "Generating Voice..."
-            
-            generateAndPlayAudio(apiKey, text, btnPlay)
+
+            generateAndPlayAudio(text, selectedVoice, btnPlay)
         }
     }
 
-    private fun generateAndPlayAudio(apiKey: String, text: String, btnPlay: Button) {
-        // 1. Notice the URL change at the end!
+    private fun generateAndPlayAudio(text: String, voice: String, btnPlay: Button) {
         val url = "https://kokoro-web-latest-066e.onrender.com/v1/audio/speech"
 
         val json = JSONObject()
-        // 2. The edge-tts API expects the standard OpenAI model name
-        json.put("model", "tts-1") 
+        json.put("model", "tts-1")
         json.put("input", text)
-        
-        // 3. Microsoft Edge's Premium Hindi Neural Voices:
-        // Use "hi-IN-MadhurNeural" (Male) or "hi-IN-SwaraNeural" (Female)
-        json.put("voice", "hi-IN-MadhurNeural") 
-        
+        json.put("voice", voice)
+
         val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
 
         val request = Request.Builder()
             .url(url)
-            // It still accepts the secret password you set up in Render!
-            .addHeader("Authorization", "Bearer $apiKey") 
+            .addHeader("Authorization", "Bearer $API_KEY")
             .post(body)
             .build()
 
@@ -94,7 +100,7 @@ class MainActivity : AppCompatActivity() {
 
                 val audioData = response.body?.bytes()
                 if (audioData != null) {
-                    playAudio(audioData) 
+                    playAudio(audioData)
                 }
 
                 runOnUiThread {
@@ -104,8 +110,6 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
-
-
 
     private fun playAudio(audioData: ByteArray) {
         try {
