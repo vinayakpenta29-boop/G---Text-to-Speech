@@ -328,7 +328,7 @@ class MainActivity : AppCompatActivity() {
         NotificationManagerCompat.from(this).cancel(1)
     }
 
-    // --- THE FULLY RESAMPLED BULLETPROOF SAVE FUNCTION --- //
+    // --- FULLY REPAIRED, BULLETPROOF SAVE FUNCTION --- //
     private fun saveAudioToDevice() {
         val data = latestAudioData
         if (data == null) {
@@ -361,6 +361,7 @@ class MainActivity : AppCompatActivity() {
                 var remainingTempo = currentSpeed / currentPitch
                 val tempoFilters = ArrayList<String>()
                 
+                // Break crazy speeds down into safe chunks
                 while (remainingTempo > 2.0f) {
                     tempoFilters.add("atempo=2.0")
                     remainingTempo /= 2.0f
@@ -373,27 +374,23 @@ class MainActivity : AppCompatActivity() {
                 
                 val combinedTempoFilter = tempoFilters.joinToString(",")
 
-                // FIX: Adding aresample=24000 forces the output back into a legal MP3 format!
-                val commandArgs = arrayOf(
-                    "-y",
-                    "-i", inputFile.absolutePath,
-                    "-filter:a", "asetrate=$newSampleRate,$combinedTempoFilter,aresample=24000",
-                    outputFile.absolutePath
-                )
+                // 1. Used the exact String syntax that we know works on your device
+                // 2. Added aresample=24000 to force the final file back into a legal MP3 structure
+                val ffmpegCommand = "-y -i '${inputFile.absolutePath}' -filter:a 'asetrate=$newSampleRate,$combinedTempoFilter,aresample=24000' '${outputFile.absolutePath}'"
                 
-                val session = FFmpegKit.executeWithArguments(commandArgs)
+                val session = FFmpegKit.execute(ffmpegCommand)
 
-                if (com.arthenica.ffmpegkit.ReturnCode.isSuccess(session.returnCode)) {
+                // 3. Reverted to the correct boolean check that doesn't trigger the Throwable crash
+                if (session.returnCode.isValueSuccess) {
                     saveFileToStorage(outputFile.readBytes(), "HorrorStory_FX_${System.currentTimeMillis()}.mp3")
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "Horror Audio Saved with Effects!", Toast.LENGTH_LONG).show()
                     }
                 } else {
-                    // We print the exact FFmpeg error to your Android Studio logs to help debug if it fails again
-                    println("FFMPEG LOGS: ${session.allLogsAsString}")
+                    println("FFMPEG ERROR: ${session.allLogsAsString}")
                     saveFileToStorage(data, "HorrorStory_Original_${System.currentTimeMillis()}.mp3")
                     runOnUiThread {
-                        Toast.makeText(this@MainActivity, "Effect engine rejected values. Saved original audio.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@MainActivity, "Effect engine failed. Saved original audio.", Toast.LENGTH_LONG).show()
                     }
                 }
 
