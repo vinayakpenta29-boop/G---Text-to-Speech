@@ -23,6 +23,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.FFprobeKit
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
@@ -39,7 +41,7 @@ import java.util.concurrent.TimeUnit
 class MainActivity : AppCompatActivity() {
 
     // Keep your working password here
-    private val API_KEY = "Vinay@1979"
+    private val API_KEY = "YOUR_REAL_PASSWORD_HERE"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(120, TimeUnit.SECONDS)
@@ -51,7 +53,7 @@ class MainActivity : AppCompatActivity() {
     private var currentSpeed = 1.0f
     private var currentPitch = 1.0f
     private var isAudioPaused = false
-    private var latestAudioData: ByteArray? = null 
+    private var latestAudioData: ByteArray? = null
 
     private lateinit var btnGeneratePlay: Button
     private lateinit var btnPauseResume: Button
@@ -62,7 +64,6 @@ class MainActivity : AppCompatActivity() {
     private var mediaSession: MediaSessionCompat? = null
     private val ACTION_PLAY_PAUSE = "com.example.tts.ACTION_PLAY_PAUSE"
 
-    // Listens for you pressing Play/Pause on the notification
     private val notificationReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == ACTION_PLAY_PAUSE) {
@@ -75,24 +76,20 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Request Permissions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
             }
         }
 
-        // Setup Notification Channel
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel("tts_channel", "Audio Playback", NotificationManager.IMPORTANCE_LOW)
             val nm = getSystemService(NotificationManager::class.java)
             nm.createNotificationChannel(channel)
         }
 
-        // Register Receiver for Notification Buttons
         val filter = IntentFilter(ACTION_PLAY_PAUSE)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // FIX: This must be EXPORTED so the Android System (Notification panel) is allowed to send the play/pause command to your app!
             registerReceiver(notificationReceiver, filter, Context.RECEIVER_EXPORTED)
         } else {
             registerReceiver(notificationReceiver, filter)
@@ -254,7 +251,6 @@ class MainActivity : AppCompatActivity() {
             btnStop.isEnabled = true
             btnSave.isEnabled = true
 
-            // Set up the MediaSession Metadata for the Notification
             mediaSession?.setMetadata(
                 MediaMetadataCompat.Builder()
                     .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "Hindi Horror Story")
@@ -287,7 +283,6 @@ class MainActivity : AppCompatActivity() {
         if (mediaPlayer == null) return
         val isPlaying = mediaPlayer!!.isPlaying
 
-        // FIX: Ensure the intent explicitly targets this app so the system doesn't block it
         val playPauseIntent = Intent(ACTION_PLAY_PAUSE).apply {
             setPackage(packageName) 
         }
@@ -333,6 +328,7 @@ class MainActivity : AppCompatActivity() {
         NotificationManagerCompat.from(this).cancel(1)
     }
 
+    // --- UPDATED SAVE FUNCTION --- //
     private fun saveAudioToDevice() {
         val data = latestAudioData
         if (data == null) {
@@ -340,7 +336,6 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        // Ask for storage permission on older Android devices
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 102)
@@ -348,27 +343,89 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        try {
-            val fileName = "HorrorStory_${System.currentTimeMillis()}.mp3"
-            val resolver = contentResolver
-            val contentValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                put(MediaStore.MediaColumns.MIME_TYPE, "audio/mpeg")
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/StoryTTS")
-                }
-            }
+        Toast.makeText(this, "Baking effects into MP3... Please wait.", Toast.LENGTH_LONG).show()
+        btnSave.isEnabled = false
 
-            val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, contentValues)
-            if (uri != null) {
-                resolver.openOutputStream(uri)?.use { os ->
-                    os.write(data)
+        // Run heavy processing in the background so the app doesn't freeze
+        Thread {
+            try {
+                // 1. Save original to a raw file
+                val inputFile = File.createTempFile("raw_audio", ".mp3", cacheDir)
+                val fos = FileOutputStream(inputFile)
+                fos.write(data)
+                fos.close()
+
+                val outputFile = File.createTempFile("processed_audio", ".mp3", cacheDir)
+
+                // 2. Discover original Sample Rate dynamically 
+                var originalSampleRate = 24000 
+                try {
+                    val info = FFprobeKit.getMediaInformation(inputFile.absolutePath).mediaInformation
+                    if (info != null && info.streams.isNotEmpty()) {
+                        val rateStr = info.streams[0].sampleRate
+                        if (rateStr != null) {
+                            originalSampleRate = rateStr.toFloat().toInt()
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-                Toast.makeText(this, "Audio saved to Music/StoryTTS folder!", Toast.LENGTH_LONG).show()
+
+                // 3. Math for the FFmpeg Audio Engine
+                val newSampleRate = (originalSampleRate * currentPitch).toInt()
+                val tempo = currentSpeed / currentPitch
+
+                var atempoFilter = "atempo=$tempo"
+                // FFmpeg requires tempo filters below 0.5 to be chained together
+                if (tempo < 0.5) {
+                    atempoFilter = "atempo=0.5,atempo=${tempo / 0.5}"
+                }
+
+                // 4. Run the FFmpeg processing command
+                val ffmpegCommand = "-y -i ${inputFile.absolutePath} -filter:a \"asetrate=$newSampleRate,$atempoFilter\" ${outputFile.absolutePath}"
+                val session = FFmpegKit.execute(ffmpegCommand)
+
+                if (session.returnCode.isValueSuccess) {
+                    // 5. Save final masterpiece to phone storage
+                    val fileName = "HorrorStory_${System.currentTimeMillis()}.mp3"
+                    val resolver = contentResolver
+                    val contentValues = ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                        put(MediaStore.MediaColumns.MIME_TYPE, "audio/mpeg")
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/StoryTTS")
+                        }
+                    }
+
+                    val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, contentValues)
+                    if (uri != null) {
+                        resolver.openOutputStream(uri)?.use { os ->
+                            os.write(outputFile.readBytes())
+                        }
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "Horror Audio Saved with Effects!", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                } else {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Failed to apply audio effects.", Toast.LENGTH_LONG).show()
+                    }
+                }
+
+                // Clean up temp files
+                inputFile.delete()
+                outputFile.delete()
+
+            } catch (e: Exception) {
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            } finally {
+                runOnUiThread {
+                    btnSave.isEnabled = true
+                }
             }
-        } catch (e: Exception) {
-            Toast.makeText(this, "Failed to save: ${e.message}", Toast.LENGTH_LONG).show()
-        }
+        }.start()
     }
 
     override fun onDestroy() {
