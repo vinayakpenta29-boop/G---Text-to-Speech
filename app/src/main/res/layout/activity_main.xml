@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:background="#F3F4F6"> <!-- Premium light gray background -->
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -10,146 +12,235 @@
         android:orientation="vertical"
         android:padding="20dp">
 
+        <!-- Modern Header -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Hindi Story TTS"
-            android:textSize="22sp"
+            android:text="Story Studio"
+            android:textSize="28sp"
             android:textStyle="bold"
-            android:layout_marginBottom="12dp"/>
-
-        <!-- Voice Selection -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Select Hindi Voice:"
-            android:textStyle="bold"
+            android:textColor="#111827"
+            android:fontFamily="sans-serif-black"
             android:layout_marginBottom="4dp"/>
 
-        <RadioGroup
-            android:id="@+id/radioGroupVoice"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
-
-            <RadioButton
-                android:id="@+id/radioMadhur"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Madhur (Male)"
-                android:checked="true"
-                android:layout_marginEnd="16dp"/>
-
-            <RadioButton
-                android:id="@+id/radioSwara"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Swara (Female)"/>
-        </RadioGroup>
-
-        <!-- Speed Selection -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Voice Speed:"
-            android:textStyle="bold"
-            android:layout_marginBottom="4dp"/>
+            android:text="AI Text-to-Speech Engine"
+            android:textSize="14sp"
+            android:textColor="#6B7280"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginBottom="24dp"/>
 
-        <RadioGroup
-            android:id="@+id/radioGroupSpeed"
+        <!-- CARD 1: CONFIGURATION -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="#FFFFFF"
+            android:layout_marginBottom="16dp">
 
-            <RadioButton
-                android:id="@+id/speed075"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="0.75x"
-                android:layout_marginEnd="8dp"/>
+                android:orientation="vertical"
+                android:padding="20dp">
 
-            <RadioButton
-                android:id="@+id/speed100"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="1.0x"
-                android:checked="true"
-                android:layout_marginEnd="8dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Voice Actor"
+                    android:textSize="14sp"
+                    android:textColor="#4F46E5"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"
+                    android:layout_marginBottom="8dp"/>
 
-            <RadioButton
-                android:id="@+id/speed125"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="1.25x"
-                android:layout_marginEnd="8dp"/>
+                <RadioGroup
+                    android:id="@+id/radioGroupVoice"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
 
-            <RadioButton
-                android:id="@+id/speed150"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="1.5x"/>
-        </RadioGroup>
+                    <RadioButton
+                        android:id="@+id/radioMadhur"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Madhur (Male)"
+                        android:textColor="#374151"
+                        android:checked="true"
+                        android:layout_marginEnd="16dp"/>
 
-        <!-- Story Text Input -->
-        <EditText
-            android:id="@+id/editStoryText"
+                    <RadioButton
+                        android:id="@+id/radioSwara"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#374151"
+                        android:text="Swara (Female)"/>
+                </RadioGroup>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#E5E7EB"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="16dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Playback Speed"
+                    android:textSize="14sp"
+                    android:textColor="#4F46E5"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"
+                    android:layout_marginBottom="8dp"/>
+
+                <RadioGroup
+                    android:id="@+id/radioGroupSpeed"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <RadioButton
+                        android:id="@+id/speed075"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#374151"
+                        android:text="0.75x"
+                        android:layout_marginEnd="8dp"/>
+
+                    <RadioButton
+                        android:id="@+id/speed100"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#374151"
+                        android:text="1.0x"
+                        android:checked="true"
+                        android:layout_marginEnd="8dp"/>
+
+                    <RadioButton
+                        android:id="@+id/speed125"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#374151"
+                        android:text="1.25x"
+                        android:layout_marginEnd="8dp"/>
+
+                    <RadioButton
+                        android:id="@+id/speed150"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#374151"
+                        android:text="1.5x"/>
+                </RadioGroup>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- CARD 2: STORY INPUT -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:minHeight="200dp"
-            android:gravity="top|start"
-            android:hint="Paste your Hindi story text here..."
-            android:inputType="textMultiLine"
-            android:background="#11000000"
-            android:padding="12dp"
-            android:layout_marginBottom="16dp"/>
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="#FFFFFF"
+            android:layout_marginBottom="24dp">
 
-        <!-- Generate & Play Button -->
-        <Button
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Story Script"
+                    android:textSize="14sp"
+                    android:textColor="#4F46E5"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"
+                    android:layout_marginBottom="12dp"/>
+
+                <EditText
+                    android:id="@+id/editStoryText"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:minHeight="180dp"
+                    android:gravity="top|start"
+                    android:hint="Type or paste your Hindi story here..."
+                    android:textColorHint="#9CA3AF"
+                    android:textColor="#1F2937"
+                    android:inputType="textMultiLine"
+                    android:background="@drawable/bg_input"
+                    android:padding="16dp"
+                    android:textSize="16sp"
+                    android:lineSpacingExtra="4dp"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- PRIMARY ACTION BUTTON -->
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnGeneratePlay"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="60dp"
             android:text="Generate &amp; Play"
-            android:padding="14dp"
-            android:layout_marginBottom="8dp"/>
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:fontFamily="sans-serif-medium"
+            android:background="@drawable/bg_button_primary"
+            android:elevation="4dp"
+            android:layout_marginBottom="16dp"/>
 
-        <!-- Playback Controls -->
+        <!-- CONTROLS ROW -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:weightSum="3">
 
-            <Button
+            <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btnPauseResume"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="50dp"
                 android:layout_weight="1"
                 android:text="Pause"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif-medium"
+                android:background="@drawable/bg_button_secondary"
                 android:enabled="false"
-                android:layout_marginEnd="4dp"/>
+                android:layout_marginEnd="6dp"/>
 
-            <Button
+            <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btnStop"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="50dp"
                 android:layout_weight="1"
                 android:text="Stop"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif-medium"
+                android:background="@drawable/bg_button_secondary"
                 android:enabled="false"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp"/>
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp"/>
 
-            <Button
+            <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btnSave"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="50dp"
                 android:layout_weight="1"
                 android:text="Save"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif-medium"
+                android:background="@drawable/bg_button_secondary"
                 android:enabled="false"
-                android:layout_marginStart="4dp"/>
+                android:layout_marginStart="6dp"/>
         </LinearLayout>
-
     </LinearLayout>
 </ScrollView>
