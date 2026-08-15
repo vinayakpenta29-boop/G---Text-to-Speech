@@ -102,6 +102,7 @@ class MainActivity : AppCompatActivity() {
         btnStop = findViewById(R.id.btnStop)
         btnSave = findViewById(R.id.btnSave)
 
+        // Update speed variable and notify the user to click Generate
         radioGroupSpeed.setOnCheckedChangeListener { _, checkedId ->
             currentSpeed = when (checkedId) {
                 R.id.speed075 -> 0.75f
@@ -109,7 +110,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.speed150 -> 1.50f
                 else -> 1.0f
             }
-            applyPlaybackParams()
+            Toast.makeText(this, "Speed set to ${currentSpeed}x. Press 'Generate & Play' to apply!", Toast.LENGTH_SHORT).show()
         }
 
         btnGeneratePlay.setOnClickListener {
@@ -142,7 +143,6 @@ class MainActivity : AppCompatActivity() {
                 btnPauseResume.text = "Resume"
             } else if (isAudioPaused) {
                 player.start()
-                applyPlaybackParams()
                 isAudioPaused = false
                 btnPauseResume.text = "Pause"
             }
@@ -157,6 +157,9 @@ class MainActivity : AppCompatActivity() {
         json.put("model", "tts-1")
         json.put("input", text)
         json.put("voice", voice)
+        
+        // This is the magic line! We send the speed directly to the Render server
+        json.put("speed", currentSpeed.toDouble())
 
         val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
         val request = Request.Builder().url(url).addHeader("Authorization", "Bearer $API_KEY").post(body).build()
@@ -203,10 +206,11 @@ class MainActivity : AppCompatActivity() {
             fos.close()
 
             mediaPlayer?.release()
+            
+            // The file is already processed by the server, so we just play it normally!
             mediaPlayer = MediaPlayer().apply {
                 setDataSource(tempFile.absolutePath)
                 prepare()
-                playbackParams = playbackParams.setSpeed(currentSpeed)
                 start()
                 setOnCompletionListener { stopAudioPlayback() }
             }
@@ -232,19 +236,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun applyPlaybackParams() {
-        mediaPlayer?.let { player ->
-            try {
-                val isPlaying = player.isPlaying
-                player.playbackParams = player.playbackParams.setSpeed(currentSpeed)
-                if (!isPlaying && !isAudioPaused) player.pause()
-                updateNotification()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
     private fun updateNotification() {
         if (mediaPlayer == null) return
         val isPlaying = mediaPlayer!!.isPlaying
@@ -258,10 +249,11 @@ class MainActivity : AppCompatActivity() {
         val actionTitle = if (isPlaying) "Pause" else "Play"
         val state = if (isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
 
+        // The media player speed stays at 1.0f because the server already adjusted the file
         mediaSession?.setPlaybackState(
             PlaybackStateCompat.Builder()
                 .setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE)
-                .setState(state, mediaPlayer!!.currentPosition.toLong(), currentSpeed)
+                .setState(state, mediaPlayer!!.currentPosition.toLong(), 1.0f)
                 .build()
         )
 
@@ -294,7 +286,7 @@ class MainActivity : AppCompatActivity() {
         NotificationManagerCompat.from(this).cancel(1)
     }
 
-    // --- LIGHTWEIGHT SAVE FUNCTION (NO FFMPEG) --- //
+    // --- SUPER LIGHTWEIGHT SAVE FUNCTION (NO FFMPEG) --- //
     private fun saveAudioToDevice() {
         val data = latestAudioData
         if (data == null) {
@@ -310,7 +302,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         try {
-            val fileName = "HindiStory_${System.currentTimeMillis()}.mp3"
+            val fileName = "HindiStory_${currentSpeed}x_${System.currentTimeMillis()}.mp3"
             val resolver = contentResolver
             val contentValues = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
