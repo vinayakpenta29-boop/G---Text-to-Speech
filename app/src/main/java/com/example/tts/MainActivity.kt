@@ -328,7 +328,7 @@ class MainActivity : AppCompatActivity() {
         NotificationManagerCompat.from(this).cancel(1)
     }
 
-    // --- SMARTER BULLETPROOF SAVE FUNCTION --- //
+    // --- THE FULLY RESAMPLED BULLETPROOF SAVE FUNCTION --- //
     private fun saveAudioToDevice() {
         val data = latestAudioData
         if (data == null) {
@@ -358,8 +358,6 @@ class MainActivity : AppCompatActivity() {
                 val originalSampleRate = 24000 
                 val newSampleRate = (originalSampleRate * currentPitch).toInt()
                 
-                // --- FIX: The Smart Math Engine --- //
-                // This splits extreme tempo shifts into smaller, safe chunks so FFmpeg never crashes!
                 var remainingTempo = currentSpeed / currentPitch
                 val tempoFilters = ArrayList<String>()
                 
@@ -375,12 +373,11 @@ class MainActivity : AppCompatActivity() {
                 
                 val combinedTempoFilter = tempoFilters.joinToString(",")
 
-                // --- FIX: Safe Command Execution --- //
-                // Using an array prevents errors when the library tries to read our math commands
+                // FIX: Adding aresample=24000 forces the output back into a legal MP3 format!
                 val commandArgs = arrayOf(
                     "-y",
                     "-i", inputFile.absolutePath,
-                    "-filter:a", "asetrate=$newSampleRate,$combinedTempoFilter",
+                    "-filter:a", "asetrate=$newSampleRate,$combinedTempoFilter,aresample=24000",
                     outputFile.absolutePath
                 )
                 
@@ -392,6 +389,8 @@ class MainActivity : AppCompatActivity() {
                         Toast.makeText(this@MainActivity, "Horror Audio Saved with Effects!", Toast.LENGTH_LONG).show()
                     }
                 } else {
+                    // We print the exact FFmpeg error to your Android Studio logs to help debug if it fails again
+                    println("FFMPEG LOGS: ${session.allLogsAsString}")
                     saveFileToStorage(data, "HorrorStory_Original_${System.currentTimeMillis()}.mp3")
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "Effect engine rejected values. Saved original audio.", Toast.LENGTH_LONG).show()
