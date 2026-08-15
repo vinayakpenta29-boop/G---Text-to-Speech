@@ -23,7 +23,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.arthenica.ffmpegkit.FFmpegKit
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
@@ -35,7 +34,6 @@ import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
@@ -51,7 +49,6 @@ class MainActivity : AppCompatActivity() {
 
     private var mediaPlayer: MediaPlayer? = null
     private var currentSpeed = 1.0f
-    private var currentPitch = 1.0f
     private var isAudioPaused = false
     private var latestAudioData: ByteArray? = null
 
@@ -59,7 +56,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnPauseResume: Button
     private lateinit var btnStop: Button
     private lateinit var btnSave: Button
-    private lateinit var txtPitchValue: TextView
 
     private var mediaSession: MediaSessionCompat? = null
     private val ACTION_PLAY_PAUSE = "com.example.tts.ACTION_PLAY_PAUSE"
@@ -100,10 +96,7 @@ class MainActivity : AppCompatActivity() {
         val editStoryText = findViewById<EditText>(R.id.editStoryText)
         val radioMadhur = findViewById<RadioButton>(R.id.radioMadhur)
         val radioGroupSpeed = findViewById<RadioGroup>(R.id.radioGroupSpeed)
-        val radioGroupPitch = findViewById<RadioGroup>(R.id.radioGroupPitch)
-        val seekBarPitch = findViewById<SeekBar>(R.id.seekBarPitch)
         
-        txtPitchValue = findViewById(R.id.txtPitchValue)
         btnGeneratePlay = findViewById(R.id.btnGeneratePlay)
         btnPauseResume = findViewById(R.id.btnPauseResume)
         btnStop = findViewById(R.id.btnStop)
@@ -118,33 +111,6 @@ class MainActivity : AppCompatActivity() {
             }
             applyPlaybackParams()
         }
-
-        radioGroupPitch.setOnCheckedChangeListener { _, checkedId ->
-            if (checkedId != -1) {
-                currentPitch = when (checkedId) {
-                    R.id.pitchDeep -> 0.8f
-                    R.id.pitchDemon -> 0.6f
-                    else -> 1.0f
-                }
-                seekBarPitch.progress = (currentPitch * 100).toInt()
-                txtPitchValue.text = "${currentPitch}x"
-                applyPlaybackParams()
-            }
-        }
-
-        seekBarPitch.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser) {
-                    val safeProgress = if (progress < 10) 10 else progress
-                    currentPitch = safeProgress / 100f
-                    txtPitchValue.text = "${String.format(Locale.US, "%.2f", currentPitch)}x"
-                    radioGroupPitch.clearCheck()
-                    applyPlaybackParams()
-                }
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
 
         btnGeneratePlay.setOnClickListener {
             val text = editStoryText.text.toString().trim()
@@ -240,7 +206,7 @@ class MainActivity : AppCompatActivity() {
             mediaPlayer = MediaPlayer().apply {
                 setDataSource(tempFile.absolutePath)
                 prepare()
-                playbackParams = playbackParams.setSpeed(currentSpeed).setPitch(currentPitch)
+                playbackParams = playbackParams.setSpeed(currentSpeed)
                 start()
                 setOnCompletionListener { stopAudioPlayback() }
             }
@@ -253,7 +219,7 @@ class MainActivity : AppCompatActivity() {
 
             mediaSession?.setMetadata(
                 MediaMetadataCompat.Builder()
-                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "Hindi Horror Story")
+                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "Hindi Story")
                     .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "StoryTTS")
                     .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, mediaPlayer!!.duration.toLong())
                     .build()
@@ -270,7 +236,7 @@ class MainActivity : AppCompatActivity() {
         mediaPlayer?.let { player ->
             try {
                 val isPlaying = player.isPlaying
-                player.playbackParams = player.playbackParams.setSpeed(currentSpeed).setPitch(currentPitch)
+                player.playbackParams = player.playbackParams.setSpeed(currentSpeed)
                 if (!isPlaying && !isAudioPaused) player.pause()
                 updateNotification()
             } catch (e: Exception) {
@@ -328,218 +294,41 @@ class MainActivity : AppCompatActivity() {
         NotificationManagerCompat.from(this).cancel(1)
     }
 
-    // --- FULLY REPAIRED, BULLETPROOF SAVE FUNCTION --- //
+    // --- LIGHTWEIGHT SAVE FUNCTION (NO FFMPEG) --- //
     private fun saveAudioToDevice() {
-    val data = latestAudioData
-
-    if (data == null) {
-        Toast.makeText(this, "No audio to save!", Toast.LENGTH_SHORT).show()
-        return
-    }
-
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-        if (
-            ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                102
-            )
+        val data = latestAudioData
+        if (data == null) {
+            Toast.makeText(this, "No audio to save!", Toast.LENGTH_SHORT).show()
             return
         }
-    }
 
-    Toast.makeText(
-        this,
-        "Creating audio with selected speed & pitch...",
-        Toast.LENGTH_LONG
-    ).show()
-
-    btnSave.isEnabled = false
-
-    Thread {
-        var inputFile: File? = null
-        var outputFile: File? = null
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 102)
+                return
+            }
+        }
 
         try {
-            inputFile = File.createTempFile("tts_input_", ".mp3", cacheDir)
-            outputFile = File.createTempFile("tts_output_", ".mp3", cacheDir)
-
-            FileOutputStream(inputFile).use { fos ->
-                fos.write(data)
-                fos.flush()
-            }
-
-            /*
-             * IMPORTANT
-             *
-             * Android playback:
-             * speed  = currentSpeed
-             * pitch  = currentPitch
-             *
-             * FFmpeg:
-             *
-             * asetrate changes pitch and duration
-             * atempo restores duration according to selected speed
-             */
-
-            val pitch = currentPitch
-            val speed = currentSpeed
-
-            // Kokoro/OpenAI compatible TTS normally uses 24000 Hz.
-            val sourceSampleRate = 24000
-
-            val newSampleRate =
-                (sourceSampleRate * pitch).toInt()
-
-            /*
-             * Total desired speed / pitch relationship.
-             *
-             * Example:
-             * speed = 1.25
-             * pitch = 0.60
-             *
-             * tempo = 1.25 / 0.60
-             *       = 2.0833
-             */
-
-            var tempo = speed / pitch
-
-            val tempoFilters = mutableListOf<String>()
-
-            // FFmpeg atempo accepts 0.5 - 2.0 per filter.
-            while (tempo > 2.0f) {
-                tempoFilters.add("atempo=2.0")
-                tempo /= 2.0f
-            }
-
-            while (tempo < 0.5f) {
-                tempoFilters.add("atempo=0.5")
-                tempo /= 0.5f
-            }
-
-            tempoFilters.add(
-                "atempo=${String.format(Locale.US, "%.6f", tempo)}"
-            )
-
-            val tempoFilter = tempoFilters.joinToString(",")
-
-            val audioFilter =
-                "asetrate=$newSampleRate,$tempoFilter,aresample=$sourceSampleRate"
-
-            /*
-             * Use double quotes around the filter.
-             * This is more reliable with FFmpegKit.
-             */
-
-            val ffmpegCommand =
-                "-y " +
-                "-i \"${inputFile.absolutePath}\" " +
-                "-filter:a \"$audioFilter\" " +
-                "-codec:a libmp3lame " +
-                "-q:a 2 " +
-                "\"${outputFile.absolutePath}\""
-
-            println("FFMPEG COMMAND:")
-            println(ffmpegCommand)
-
-            val session = FFmpegKit.execute(ffmpegCommand)
-
-            val returnCode = session.returnCode
-
-            println("FFMPEG RETURN CODE: $returnCode")
-            println("FFMPEG LOG:")
-            println(session.allLogsAsString)
-
-            if (returnCode.isValueSuccess) {
-
-                val processedData = outputFile.readBytes()
-
-                if (processedData.isEmpty()) {
-                    throw Exception("FFmpeg created an empty audio file")
-                }
-
-                saveFileToStorage(
-                    processedData,
-                    "HorrorStory_${String.format(
-                        Locale.US,
-                        "%.2fx_%.2fx",
-                        speed,
-                        pitch
-                    )}_${System.currentTimeMillis()}.mp3"
-                )
-
-                runOnUiThread {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Audio saved with Speed ${speed}x and Pitch ${pitch}x",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-
-            } else {
-
-                val errorLog = session.allLogsAsString
-
-                println("FFMPEG FAILED:")
-                println(errorLog)
-
-                runOnUiThread {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "FFmpeg failed. Audio was NOT saved as original.",
-                        Toast.LENGTH_LONG
-                    ).show()
+            val fileName = "HindiStory_${System.currentTimeMillis()}.mp3"
+            val resolver = contentResolver
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, "audio/mpeg")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/StoryTTS")
                 }
             }
 
+            val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, contentValues)
+            if (uri != null) {
+                resolver.openOutputStream(uri)?.use { os ->
+                    os.write(data)
+                }
+                Toast.makeText(this, "Audio saved to Music/StoryTTS folder!", Toast.LENGTH_LONG).show()
+            }
         } catch (e: Exception) {
-
-            e.printStackTrace()
-
-            runOnUiThread {
-                Toast.makeText(
-                    this@MainActivity,
-                    "Save Error: ${e.message}",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-
-        } finally {
-
-            try {
-                inputFile?.delete()
-                outputFile?.delete()
-            } catch (_: Exception) {
-            }
-
-            runOnUiThread {
-                btnSave.isEnabled = true
-            }
-        }
-
-    }.start()
-}
-
-    private fun saveFileToStorage(audioBytes: ByteArray, fileName: String) {
-        val resolver = contentResolver
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            put(MediaStore.MediaColumns.MIME_TYPE, "audio/mpeg")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/StoryTTS")
-            }
-        }
-
-        val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, contentValues)
-        if (uri != null) {
-            resolver.openOutputStream(uri)?.use { os ->
-                os.write(audioBytes)
-            }
+            Toast.makeText(this, "Failed to save: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
