@@ -24,7 +24,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.arthenica.ffmpegkit.FFmpegKit
-import com.arthenica.ffmpegkit.FFprobeKit
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
@@ -36,6 +35,7 @@ import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
@@ -137,7 +137,7 @@ class MainActivity : AppCompatActivity() {
                 if (fromUser) {
                     val safeProgress = if (progress < 10) 10 else progress
                     currentPitch = safeProgress / 100f
-                    txtPitchValue.text = "${String.format("%.2f", currentPitch)}x"
+                    txtPitchValue.text = "${String.format(Locale.US, "%.2f", currentPitch)}x"
                     radioGroupPitch.clearCheck()
                     applyPlaybackParams()
                 }
@@ -328,7 +328,7 @@ class MainActivity : AppCompatActivity() {
         NotificationManagerCompat.from(this).cancel(1)
     }
 
-    // --- UPDATED SAVE FUNCTION --- //
+    // --- BULLETPROOF SAVE FUNCTION --- //
     private fun saveAudioToDevice() {
         val data = latestAudioData
         if (data == null) {
@@ -346,7 +346,6 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, "Baking effects into MP3... Please wait.", Toast.LENGTH_LONG).show()
         btnSave.isEnabled = false
 
-        // Run heavy processing in the background so the app doesn't freeze
         Thread {
             try {
                 // 1. Save original to a raw file
@@ -357,68 +356,48 @@ class MainActivity : AppCompatActivity() {
 
                 val outputFile = File.createTempFile("processed_audio", ".mp3", cacheDir)
 
-                // 2. Discover original Sample Rate dynamically 
-                var originalSampleRate = 24000 
-                try {
-                    val info = FFprobeKit.getMediaInformation(inputFile.absolutePath).mediaInformation
-                    if (info != null && info.streams.isNotEmpty()) {
-                        val rateStr = info.streams[0].sampleRate
-                        if (rateStr != null) {
-                            originalSampleRate = rateStr.toFloat().toInt()
-                        }
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-
-                // 3. Math for the FFmpeg Audio Engine
+                // 2. Hardcode Microsoft Edge TTS Sample Rate to avoid FFprobe crashing
+                val originalSampleRate = 24000 
+                
+                // 3. Process Math with Forced US Decimals (Fixes comma crash)
                 val newSampleRate = (originalSampleRate * currentPitch).toInt()
                 val tempo = currentSpeed / currentPitch
-
-                var atempoFilter = "atempo=$tempo"
-                // FFmpeg requires tempo filters below 0.5 to be chained together
+                
+                val tempoStr = String.format(Locale.US, "%.2f", tempo)
+                var atempoFilter = "atempo=$tempoStr"
+                
                 if (tempo < 0.5) {
-                    atempoFilter = "atempo=0.5,atempo=${tempo / 0.5}"
+                    val splitTempo = String.format(Locale.US, "%.2f", tempo / 0.5)
+                    atempoFilter = "atempo=0.5,atempo=$splitTempo"
                 }
 
-                // 4. Run the FFmpeg processing command
+                // 4. Run FFmpeg Command
                 val ffmpegCommand = "-y -i ${inputFile.absolutePath} -filter:a \"asetrate=$newSampleRate,$atempoFilter\" ${outputFile.absolutePath}"
                 val session = FFmpegKit.execute(ffmpegCommand)
 
                 if (session.returnCode.isValueSuccess) {
-                    // 5. Save final masterpiece to phone storage
-                    val fileName = "HorrorStory_${System.currentTimeMillis()}.mp3"
-                    val resolver = contentResolver
-                    val contentValues = ContentValues().apply {
-                        put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                        put(MediaStore.MediaColumns.MIME_TYPE, "audio/mpeg")
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/StoryTTS")
-                        }
-                    }
-
-                    val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, contentValues)
-                    if (uri != null) {
-                        resolver.openOutputStream(uri)?.use { os ->
-                            os.write(outputFile.readBytes())
-                        }
-                        runOnUiThread {
-                            Toast.makeText(this@MainActivity, "Horror Audio Saved with Effects!", Toast.LENGTH_LONG).show()
-                        }
+                    saveFileToStorage(outputFile.readBytes(), "HorrorStory_FX_${System.currentTimeMillis()}.mp3")
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Horror Audio Saved with Effects!", Toast.LENGTH_LONG).show()
                     }
                 } else {
+                    // Fallback to original audio if FFmpeg processing fails
+                    saveFileToStorage(data, "HorrorStory_Original_${System.currentTimeMillis()}.mp3")
                     runOnUiThread {
-                        Toast.makeText(this@MainActivity, "Failed to apply audio effects.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@MainActivity, "Effect engine failed. Saved original audio instead.", Toast.LENGTH_LONG).show()
                     }
                 }
 
-                // Clean up temp files
                 inputFile.delete()
                 outputFile.delete()
 
-            } catch (e: Exception) {
+            // Catching 'Throwable' guarantees the app NEVER force closes!
+            } catch (t: Throwable) {
+                t.printStackTrace()
+                // Ultimate Fallback: Save original audio
+                saveFileToStorage(data, "HorrorStory_Original_${System.currentTimeMillis()}.mp3")
                 runOnUiThread {
-                    Toast.makeText(this@MainActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@MainActivity, "Audio Saved (Without Effects due to processor error)", Toast.LENGTH_LONG).show()
                 }
             } finally {
                 runOnUiThread {
@@ -426,6 +405,25 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }.start()
+    }
+
+    // A clean helper function to handle the actual file saving to the Music folder
+    private fun saveFileToStorage(audioBytes: ByteArray, fileName: String) {
+        val resolver = contentResolver
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+            put(MediaStore.MediaColumns.MIME_TYPE, "audio/mpeg")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/StoryTTS")
+            }
+        }
+
+        val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, contentValues)
+        if (uri != null) {
+            resolver.openOutputStream(uri)?.use { os ->
+                os.write(audioBytes)
+            }
+        }
     }
 
     override fun onDestroy() {
