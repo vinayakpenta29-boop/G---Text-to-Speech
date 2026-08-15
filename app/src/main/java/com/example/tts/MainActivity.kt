@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit
 class MainActivity : AppCompatActivity() {
 
     // Keep your working password here
-    private val API_KEY = "Vinay@1979"
+    private val API_KEY = "YOUR_REAL_PASSWORD_HERE"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(120, TimeUnit.SECONDS)
@@ -60,6 +60,7 @@ class MainActivity : AppCompatActivity() {
     private var mediaSession: MediaSessionCompat? = null
     private val ACTION_PLAY_PAUSE = "com.example.tts.ACTION_PLAY_PAUSE"
 
+    // This receiver handles clicks for older Android versions
     private val notificationReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == ACTION_PLAY_PAUSE) {
@@ -92,6 +93,16 @@ class MainActivity : AppCompatActivity() {
         }
 
         mediaSession = MediaSessionCompat(this, "StoryTTS")
+        
+        // --- NEW FIX: This listens to modern Android Quick Settings Media Controls ---
+        mediaSession?.setCallback(object : MediaSessionCompat.Callback() {
+            override fun onPlay() {
+                if (isAudioPaused) togglePlayPause()
+            }
+            override fun onPause() {
+                if (mediaPlayer?.isPlaying == true) togglePlayPause()
+            }
+        })
 
         val editStoryText = findViewById<EditText>(R.id.editStoryText)
         val radioMadhur = findViewById<RadioButton>(R.id.radioMadhur)
@@ -102,7 +113,6 @@ class MainActivity : AppCompatActivity() {
         btnStop = findViewById(R.id.btnStop)
         btnSave = findViewById(R.id.btnSave)
 
-        // Update speed variable and notify the user to click Generate
         radioGroupSpeed.setOnCheckedChangeListener { _, checkedId ->
             currentSpeed = when (checkedId) {
                 R.id.speed075 -> 0.75f
@@ -157,8 +167,6 @@ class MainActivity : AppCompatActivity() {
         json.put("model", "tts-1")
         json.put("input", text)
         json.put("voice", voice)
-        
-        // This is the magic line! We send the speed directly to the Render server
         json.put("speed", currentSpeed.toDouble())
 
         val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
@@ -207,7 +215,6 @@ class MainActivity : AppCompatActivity() {
 
             mediaPlayer?.release()
             
-            // The file is already processed by the server, so we just play it normally!
             mediaPlayer = MediaPlayer().apply {
                 setDataSource(tempFile.absolutePath)
                 prepare()
@@ -249,7 +256,6 @@ class MainActivity : AppCompatActivity() {
         val actionTitle = if (isPlaying) "Pause" else "Play"
         val state = if (isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
 
-        // The media player speed stays at 1.0f because the server already adjusted the file
         mediaSession?.setPlaybackState(
             PlaybackStateCompat.Builder()
                 .setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE)
@@ -286,7 +292,6 @@ class MainActivity : AppCompatActivity() {
         NotificationManagerCompat.from(this).cancel(1)
     }
 
-    // --- SUPER LIGHTWEIGHT SAVE FUNCTION (NO FFMPEG) --- //
     private fun saveAudioToDevice() {
         val data = latestAudioData
         if (data == null) {
