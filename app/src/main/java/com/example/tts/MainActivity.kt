@@ -330,86 +330,200 @@ class MainActivity : AppCompatActivity() {
 
     // --- FULLY REPAIRED, BULLETPROOF SAVE FUNCTION --- //
     private fun saveAudioToDevice() {
-        val data = latestAudioData
-        if (data == null) {
-            Toast.makeText(this, "No audio to save!", Toast.LENGTH_SHORT).show()
+    val data = latestAudioData
+
+    if (data == null) {
+        Toast.makeText(this, "No audio to save!", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        if (
+            ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                102
+            )
             return
         }
+    }
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 102)
-                return
+    Toast.makeText(
+        this,
+        "Creating audio with selected speed & pitch...",
+        Toast.LENGTH_LONG
+    ).show()
+
+    btnSave.isEnabled = false
+
+    Thread {
+        var inputFile: File? = null
+        var outputFile: File? = null
+
+        try {
+            inputFile = File.createTempFile("tts_input_", ".mp3", cacheDir)
+            outputFile = File.createTempFile("tts_output_", ".mp3", cacheDir)
+
+            FileOutputStream(inputFile).use { fos ->
+                fos.write(data)
+                fos.flush()
+            }
+
+            /*
+             * IMPORTANT
+             *
+             * Android playback:
+             * speed  = currentSpeed
+             * pitch  = currentPitch
+             *
+             * FFmpeg:
+             *
+             * asetrate changes pitch and duration
+             * atempo restores duration according to selected speed
+             */
+
+            val pitch = currentPitch
+            val speed = currentSpeed
+
+            // Kokoro/OpenAI compatible TTS normally uses 24000 Hz.
+            val sourceSampleRate = 24000
+
+            val newSampleRate =
+                (sourceSampleRate * pitch).toInt()
+
+            /*
+             * Total desired speed / pitch relationship.
+             *
+             * Example:
+             * speed = 1.25
+             * pitch = 0.60
+             *
+             * tempo = 1.25 / 0.60
+             *       = 2.0833
+             */
+
+            var tempo = speed / pitch
+
+            val tempoFilters = mutableListOf<String>()
+
+            // FFmpeg atempo accepts 0.5 - 2.0 per filter.
+            while (tempo > 2.0f) {
+                tempoFilters.add("atempo=2.0")
+                tempo /= 2.0f
+            }
+
+            while (tempo < 0.5f) {
+                tempoFilters.add("atempo=0.5")
+                tempo /= 0.5f
+            }
+
+            tempoFilters.add(
+                "atempo=${String.format(Locale.US, "%.6f", tempo)}"
+            )
+
+            val tempoFilter = tempoFilters.joinToString(",")
+
+            val audioFilter =
+                "asetrate=$newSampleRate,$tempoFilter,aresample=$sourceSampleRate"
+
+            /*
+             * Use double quotes around the filter.
+             * This is more reliable with FFmpegKit.
+             */
+
+            val ffmpegCommand =
+                "-y " +
+                "-i \"${inputFile.absolutePath}\" " +
+                "-filter:a \"$audioFilter\" " +
+                "-codec:a libmp3lame " +
+                "-q:a 2 " +
+                "\"${outputFile.absolutePath}\""
+
+            println("FFMPEG COMMAND:")
+            println(ffmpegCommand)
+
+            val session = FFmpegKit.execute(ffmpegCommand)
+
+            val returnCode = session.returnCode
+
+            println("FFMPEG RETURN CODE: $returnCode")
+            println("FFMPEG LOG:")
+            println(session.allLogsAsString)
+
+            if (returnCode.isValueSuccess) {
+
+                val processedData = outputFile.readBytes()
+
+                if (processedData.isEmpty()) {
+                    throw Exception("FFmpeg created an empty audio file")
+                }
+
+                saveFileToStorage(
+                    processedData,
+                    "HorrorStory_${String.format(
+                        Locale.US,
+                        "%.2fx_%.2fx",
+                        speed,
+                        pitch
+                    )}_${System.currentTimeMillis()}.mp3"
+                )
+
+                runOnUiThread {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Audio saved with Speed ${speed}x and Pitch ${pitch}x",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+
+            } else {
+
+                val errorLog = session.allLogsAsString
+
+                println("FFMPEG FAILED:")
+                println(errorLog)
+
+                runOnUiThread {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "FFmpeg failed. Audio was NOT saved as original.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+
+        } catch (e: Exception) {
+
+            e.printStackTrace()
+
+            runOnUiThread {
+                Toast.makeText(
+                    this@MainActivity,
+                    "Save Error: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+
+        } finally {
+
+            try {
+                inputFile?.delete()
+                outputFile?.delete()
+            } catch (_: Exception) {
+            }
+
+            runOnUiThread {
+                btnSave.isEnabled = true
             }
         }
 
-        Toast.makeText(this, "Baking effects into MP3... Please wait.", Toast.LENGTH_LONG).show()
-        btnSave.isEnabled = false
-
-        Thread {
-            try {
-                val inputFile = File.createTempFile("raw_audio", ".mp3", cacheDir)
-                val fos = FileOutputStream(inputFile)
-                fos.write(data)
-                fos.close()
-
-                val outputFile = File.createTempFile("processed_audio", ".mp3", cacheDir)
-
-                val originalSampleRate = 24000 
-                val newSampleRate = (originalSampleRate * currentPitch).toInt()
-                
-                var remainingTempo = currentSpeed / currentPitch
-                val tempoFilters = ArrayList<String>()
-                
-                // Break crazy speeds down into safe chunks
-                while (remainingTempo > 2.0f) {
-                    tempoFilters.add("atempo=2.0")
-                    remainingTempo /= 2.0f
-                }
-                while (remainingTempo < 0.5f) {
-                    tempoFilters.add("atempo=0.5")
-                    remainingTempo /= 0.5f
-                }
-                tempoFilters.add("atempo=${String.format(Locale.US, "%.3f", remainingTempo)}")
-                
-                val combinedTempoFilter = tempoFilters.joinToString(",")
-
-                // 1. Used the exact String syntax that we know works on your device
-                // 2. Added aresample=24000 to force the final file back into a legal MP3 structure
-                val ffmpegCommand = "-y -i '${inputFile.absolutePath}' -filter:a 'asetrate=$newSampleRate,$combinedTempoFilter,aresample=24000' '${outputFile.absolutePath}'"
-                
-                val session = FFmpegKit.execute(ffmpegCommand)
-
-                // 3. Reverted to the correct boolean check that doesn't trigger the Throwable crash
-                if (session.returnCode.isValueSuccess) {
-                    saveFileToStorage(outputFile.readBytes(), "HorrorStory_FX_${System.currentTimeMillis()}.mp3")
-                    runOnUiThread {
-                        Toast.makeText(this@MainActivity, "Horror Audio Saved with Effects!", Toast.LENGTH_LONG).show()
-                    }
-                } else {
-                    println("FFMPEG ERROR: ${session.allLogsAsString}")
-                    saveFileToStorage(data, "HorrorStory_Original_${System.currentTimeMillis()}.mp3")
-                    runOnUiThread {
-                        Toast.makeText(this@MainActivity, "Effect engine failed. Saved original audio.", Toast.LENGTH_LONG).show()
-                    }
-                }
-
-                inputFile.delete()
-                outputFile.delete()
-
-            } catch (t: Throwable) {
-                t.printStackTrace()
-                saveFileToStorage(data, "HorrorStory_Original_${System.currentTimeMillis()}.mp3")
-                runOnUiThread {
-                    Toast.makeText(this@MainActivity, "Audio Saved (Without Effects due to process error)", Toast.LENGTH_LONG).show()
-                }
-            } finally {
-                runOnUiThread {
-                    btnSave.isEnabled = true
-                }
-            }
-        }.start()
-    }
+    }.start()
+}
 
     private fun saveFileToStorage(audioBytes: ByteArray, fileName: String) {
         val resolver = contentResolver
