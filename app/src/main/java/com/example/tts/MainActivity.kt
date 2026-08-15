@@ -328,7 +328,7 @@ class MainActivity : AppCompatActivity() {
         NotificationManagerCompat.from(this).cancel(1)
     }
 
-    // --- BULLETPROOF SAVE FUNCTION --- //
+    // --- SMARTER BULLETPROOF SAVE FUNCTION --- //
     private fun saveAudioToDevice() {
         val data = latestAudioData
         if (data == null) {
@@ -348,7 +348,6 @@ class MainActivity : AppCompatActivity() {
 
         Thread {
             try {
-                // 1. Save original to a raw file
                 val inputFile = File.createTempFile("raw_audio", ".mp3", cacheDir)
                 val fos = FileOutputStream(inputFile)
                 fos.write(data)
@@ -356,48 +355,57 @@ class MainActivity : AppCompatActivity() {
 
                 val outputFile = File.createTempFile("processed_audio", ".mp3", cacheDir)
 
-                // 2. Hardcode Microsoft Edge TTS Sample Rate to avoid FFprobe crashing
                 val originalSampleRate = 24000 
-                
-                // 3. Process Math with Forced US Decimals (Fixes comma crash)
                 val newSampleRate = (originalSampleRate * currentPitch).toInt()
-                val tempo = currentSpeed / currentPitch
                 
-                val tempoStr = String.format(Locale.US, "%.2f", tempo)
-                var atempoFilter = "atempo=$tempoStr"
+                // --- FIX: The Smart Math Engine --- //
+                // This splits extreme tempo shifts into smaller, safe chunks so FFmpeg never crashes!
+                var remainingTempo = currentSpeed / currentPitch
+                val tempoFilters = ArrayList<String>()
                 
-                if (tempo < 0.5) {
-                    val splitTempo = String.format(Locale.US, "%.2f", tempo / 0.5)
-                    atempoFilter = "atempo=0.5,atempo=$splitTempo"
+                while (remainingTempo > 2.0f) {
+                    tempoFilters.add("atempo=2.0")
+                    remainingTempo /= 2.0f
                 }
+                while (remainingTempo < 0.5f) {
+                    tempoFilters.add("atempo=0.5")
+                    remainingTempo /= 0.5f
+                }
+                tempoFilters.add("atempo=${String.format(Locale.US, "%.3f", remainingTempo)}")
+                
+                val combinedTempoFilter = tempoFilters.joinToString(",")
 
-                // 4. Run FFmpeg Command
-                val ffmpegCommand = "-y -i ${inputFile.absolutePath} -filter:a \"asetrate=$newSampleRate,$atempoFilter\" ${outputFile.absolutePath}"
-                val session = FFmpegKit.execute(ffmpegCommand)
+                // --- FIX: Safe Command Execution --- //
+                // Using an array prevents errors when the library tries to read our math commands
+                val commandArgs = arrayOf(
+                    "-y",
+                    "-i", inputFile.absolutePath,
+                    "-filter:a", "asetrate=$newSampleRate,$combinedTempoFilter",
+                    outputFile.absolutePath
+                )
+                
+                val session = FFmpegKit.executeWithArguments(commandArgs)
 
-                if (session.returnCode.isValueSuccess) {
+                if (com.arthenica.ffmpegkit.ReturnCode.isSuccess(session.returnCode)) {
                     saveFileToStorage(outputFile.readBytes(), "HorrorStory_FX_${System.currentTimeMillis()}.mp3")
                     runOnUiThread {
                         Toast.makeText(this@MainActivity, "Horror Audio Saved with Effects!", Toast.LENGTH_LONG).show()
                     }
                 } else {
-                    // Fallback to original audio if FFmpeg processing fails
                     saveFileToStorage(data, "HorrorStory_Original_${System.currentTimeMillis()}.mp3")
                     runOnUiThread {
-                        Toast.makeText(this@MainActivity, "Effect engine failed. Saved original audio instead.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@MainActivity, "Effect engine rejected values. Saved original audio.", Toast.LENGTH_LONG).show()
                     }
                 }
 
                 inputFile.delete()
                 outputFile.delete()
 
-            // Catching 'Throwable' guarantees the app NEVER force closes!
             } catch (t: Throwable) {
                 t.printStackTrace()
-                // Ultimate Fallback: Save original audio
                 saveFileToStorage(data, "HorrorStory_Original_${System.currentTimeMillis()}.mp3")
                 runOnUiThread {
-                    Toast.makeText(this@MainActivity, "Audio Saved (Without Effects due to processor error)", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@MainActivity, "Audio Saved (Without Effects due to process error)", Toast.LENGTH_LONG).show()
                 }
             } finally {
                 runOnUiThread {
@@ -407,7 +415,6 @@ class MainActivity : AppCompatActivity() {
         }.start()
     }
 
-    // A clean helper function to handle the actual file saving to the Music folder
     private fun saveFileToStorage(audioBytes: ByteArray, fileName: String) {
         val resolver = contentResolver
         val contentValues = ContentValues().apply {
