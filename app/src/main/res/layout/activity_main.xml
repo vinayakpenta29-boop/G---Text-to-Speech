@@ -92,82 +92,13 @@
                 android:text="1.5x"/>
         </RadioGroup>
 
-        <!-- Pitch Selection (Horror Effects) -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Voice Pitch (Horror FX):"
-            android:textStyle="bold"
-            android:layout_marginBottom="4dp"/>
-
-        <RadioGroup
-            android:id="@+id/radioGroupPitch"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="8dp">
-
-            <RadioButton
-                android:id="@+id/pitchNormal"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Normal"
-                android:checked="true"
-                android:layout_marginEnd="8dp"/>
-
-            <RadioButton
-                android:id="@+id/pitchDeep"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Deep"
-                android:layout_marginEnd="8dp"/>
-
-            <RadioButton
-                android:id="@+id/pitchDemon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Demon"/>
-        </RadioGroup>
-
-        <!-- Live Pitch SeekBar -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="16dp"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Fine-tune:"
-                android:textSize="14sp"
-                android:layout_marginEnd="8dp"/>
-
-            <SeekBar
-                android:id="@+id/seekBarPitch"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:max="200"
-                android:progress="100"/>
-
-            <TextView
-                android:id="@+id/txtPitchValue"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="1.0x"
-                android:textStyle="bold"
-                android:layout_marginStart="8dp"/>
-        </LinearLayout>
-
         <!-- Story Text Input -->
         <EditText
             android:id="@+id/editStoryText"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:minHeight="140dp"
+            android:minHeight="200dp"
             android:gravity="top|start"
             android:hint="Paste your Hindi story text here..."
             android:inputType="textMultiLine"
@@ -207,7 +138,8 @@
                 android:layout_weight="1"
                 android:text="Stop"
                 android:enabled="false"
-                android:layout_marginStart="4dp"/>
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"/>
 
             <Button
                 android:id="@+id/btnSave"
