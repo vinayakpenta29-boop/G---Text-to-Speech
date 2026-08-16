@@ -52,7 +52,7 @@
                     android:layout_height="wrap_content"
                     android:text="Voice Actor"
                     android:textSize="14sp"
-                    android:textColor="#4F46E5"
+                    android:textColor="#ab1a1a"
                     android:textStyle="bold"
                     android:fontFamily="sans-serif-medium"
                     android:layout_marginBottom="8dp"/>
@@ -81,7 +81,7 @@
                 </RadioGroup>
 
                 <View
-                    android:layout_width="match_parent"
+                    android:layo#ab1a1aarent"
                     android:layout_height="1dp"
                     android:background="#E5E7EB"
                     android:layout_marginTop="16dp"
@@ -92,7 +92,7 @@
                     android:layout_height="wrap_content"
                     android:text="Playback Speed"
                     android:textSize="14sp"
-                    android:textColor="#4F46E5"
+                    android:textColor="#ab1a1a"
                     android:textStyle="bold"
                     android:fontFamily="sans-serif-medium"
                     android:layout_marginBottom="8dp"/>
@@ -159,7 +159,7 @@
                     android:layout_height="wrap_content"
                     android:text="Story Script"
                     android:textSize="14sp"
-                    android:textColor="#4F46E5"
+                    android:textColor="#ab1a1a"
                     android:textStyle="bold"
                     android:fontFamily="sans-serif-medium"
                     android:layout_marginBottom="12dp"/>
