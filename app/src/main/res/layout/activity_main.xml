@@ -19,8 +19,8 @@
             android:text="Story Studio"
             android:textSize="28sp"
             android:textStyle="bold"
-            android:textColor="#111827"
-            android:fontFamily="sans-serif-black"
+            android:textColor="#BE123C"
+            android:fontFamily="monospace"
             android:layout_marginBottom="4dp"/>
 
         <TextView
@@ -29,7 +29,7 @@
             android:text="AI Text-to-Speech Engine"
             android:textSize="14sp"
             android:textColor="#6B7280"
-            android:fontFamily="sans-serif-medium"
+            android:fontFamily="monospace"
             android:layout_marginBottom="24dp"/>
 
         <!-- CARD 1: CONFIGURATION -->
