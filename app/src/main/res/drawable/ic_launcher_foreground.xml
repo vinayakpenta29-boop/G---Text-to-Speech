@@ -1,9 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp" android:height="108dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <group android:scaleX="2.5" android:scaleY="2.5" android:translateX="24" android:translateY="24">
-        <!-- Draws a crisp white audio equalizer wave -->
-        <path android:fillColor="#FFFFFF" android:pathData="M12,4c-1.1,0 -2,0.9 -2,2v12c0,1.1 0.9,2 2,2s2,-0.9 2,-2v-12c0,-1.1 -0.9,-2 -2,-2zM8,8c-1.1,0 -2,0.9 -2,2v4c0,1.1 0.9,2 2,2s2,-0.9 2,-2v-4c0,-1.1 -0.9,-2 -2,-2zM16,8c-1.1,0 -2,0.9 -2,2v4c0,1.1 0.9,2 2,2s2,-0.9 2,-2v-4c0,-1.1 -0.9,-2 -2,-2z"/>
-    </group>
+    android:width="108dp" 
+    android:height="108dp"
+    android:viewportWidth="108" 
+    android:viewportHeight="108">
+    
+    <!-- 5 Sleek, Premium Audio Equalizer Bars -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:pathData="
+            M 30,47 L 30,61
+            M 42,39 L 42,69
+            M 54,29 L 54,79
+            M 66,39 L 66,69
+            M 78,47 L 78,61" />
 </vector>
