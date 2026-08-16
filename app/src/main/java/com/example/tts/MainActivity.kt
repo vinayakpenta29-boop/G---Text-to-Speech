@@ -10,6 +10,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
@@ -60,7 +62,6 @@ class MainActivity : AppCompatActivity() {
     private var mediaSession: MediaSessionCompat? = null
     private val ACTION_PLAY_PAUSE = "com.example.tts.ACTION_PLAY_PAUSE"
 
-    // This receiver handles clicks for older Android versions
     private val notificationReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == ACTION_PLAY_PAUSE) {
@@ -73,8 +74,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // --- THE PREMIUM COLOR FIX FOR THE TOP BARS --- //
         supportActionBar?.setBackgroundDrawable(ColorDrawable(Color.parseColor("#BE123C")))
-        window.statusBarColor = Color.parseColor("#980F30")
+        window.statusBarColor = Color.parseColor("#980F30") // Slightly darker red for the battery/wifi bar
+        // ---------------------------------------------- //
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -97,7 +100,6 @@ class MainActivity : AppCompatActivity() {
 
         mediaSession = MediaSessionCompat(this, "StoryTTS")
         
-        // --- NEW FIX: This listens to modern Android Quick Settings Media Controls ---
         mediaSession?.setCallback(object : MediaSessionCompat.Callback() {
             override fun onPlay() {
                 if (isAudioPaused) togglePlayPause()
