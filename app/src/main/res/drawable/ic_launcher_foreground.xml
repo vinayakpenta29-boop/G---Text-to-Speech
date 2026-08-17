@@ -5,15 +5,15 @@
     android:viewportWidth="108" 
     android:viewportHeight="108">
     
-    <!-- 5 Sleek, Premium Audio Equalizer Bars -->
+    <!-- 5 Sleek, Compact Audio Equalizer Bars -->
     <path
         android:strokeColor="#FFFFFF"
         android:strokeWidth="6"
         android:strokeLineCap="round"
         android:pathData="
-            M 30,47 L 30,61
-            M 42,39 L 42,69
-            M 54,29 L 54,79
-            M 66,39 L 66,69
-            M 78,47 L 78,61" />
+            M 30,49 L 30,59
+            M 42,44 L 42,64
+            M 54,38 L 54,70
+            M 66,44 L 66,64
+            M 78,49 L 78,59" />
 </vector>
