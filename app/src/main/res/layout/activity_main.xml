@@ -55,14 +55,13 @@
                     android:textColor="#BE123C"
                     android:textStyle="bold"
                     android:fontFamily="sans-serif-medium"
-                    android:layout_marginBottom="12dp"/>
+                    android:layout_marginBottom="8dp"/>
 
-                <!-- Changed to Vertical to fit the long Studio AI name perfectly -->
                 <RadioGroup
                     android:id="@+id/radioGroupVoice"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
+                    android:orientation="horizontal">
 
                     <RadioButton
                         android:id="@+id/radioMadhur"
@@ -71,23 +70,14 @@
                         android:text="Madhur (Male)"
                         android:textColor="#374151"
                         android:checked="true"
-                        android:layout_marginBottom="8dp"/>
+                        android:layout_marginEnd="16dp"/>
 
                     <RadioButton
                         android:id="@+id/radioSwara"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textColor="#374151"
-                        android:text="Swara (Female)"
-                        android:layout_marginBottom="8dp"/>
-                        
-                    <!-- The new Google Studio Voice Option -->
-                    <RadioButton
-                        android:id="@+id/radioStudio"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="#374151"
-                        android:text="Google Studio AI (All Emotions)"/>
+                        android:text="Swara (Female)"/>
                 </RadioGroup>
 
                 <View
