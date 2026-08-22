@@ -74,10 +74,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // --- THE PREMIUM COLOR FIX FOR THE TOP BARS --- //
+        // The premium Coral Red Action Bar & Status Bar
         supportActionBar?.setBackgroundDrawable(ColorDrawable(Color.parseColor("#BE123C")))
-        window.statusBarColor = Color.parseColor("#980F30") // Slightly darker red for the battery/wifi bar
-        // ---------------------------------------------- //
+        window.statusBarColor = Color.parseColor("#980F30")
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -111,6 +110,7 @@ class MainActivity : AppCompatActivity() {
 
         val editStoryText = findViewById<EditText>(R.id.editStoryText)
         val radioMadhur = findViewById<RadioButton>(R.id.radioMadhur)
+        val radioStudio = findViewById<RadioButton>(R.id.radioStudio) // Connected the new Google Studio Button
         val radioGroupSpeed = findViewById<RadioGroup>(R.id.radioGroupSpeed)
         
         btnGeneratePlay = findViewById(R.id.btnGeneratePlay)
@@ -134,7 +134,13 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Please paste story text first", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            val selectedVoice = if (radioMadhur.isChecked) "hi-IN-MadhurNeural" else "hi-IN-SwaraNeural"
+            
+            // Logic to choose which voice code to send to your API
+            val selectedVoice = when {
+                radioMadhur.isChecked -> "hi-IN-MadhurNeural"
+                radioStudio.isChecked -> "google-studio-hindi-emotions" // Replace this if your API uses a different code
+                else -> "hi-IN-SwaraNeural"
+            }
 
             btnGeneratePlay.isEnabled = false
             btnGeneratePlay.text = "Generating Voice..."
